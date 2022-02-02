@@ -37,7 +37,7 @@ class BasicWorldDemo {
 
     // Add a directional light
     let dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    
+
     dirLight.position.set(2, 2, 2);
     dirLight.castShadow = true;
     dirLight.shadow.mapsize = new THREE.Vector2(2048, 2048);
@@ -72,7 +72,7 @@ class BasicWorldDemo {
     // Add GroundPlane
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(100, 100, 10, 10),
-      new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 0.1, metalness: 0.5, envMap : envTexture }));
+      new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 0.1, metalness: 0.5, envMap: envTexture }));
     plane.castShadow = false;
     plane.receiveShadow = true;
     plane.rotation.x = -Math.PI / 2;
@@ -98,8 +98,16 @@ class BasicWorldDemo {
 
       });
 
-    const loader = new GLTFLoader();
-    loader.load('./resources/models/Avatar.glb', (gltf) => {
+    // Draco loader
+    const dracoLoader = new DRACOLoader()
+    dracoLoader.setDecoderPath('./decoder/')
+
+    const gltfLoader = new GLTFLoader()
+    gltfLoader.setDRACOLoader(dracoLoader)
+
+    let loaded = false;
+
+    gltfLoader.load('./resources/models/Avatar.glb', (gltf) => {
 
       const model = gltf.scene;
 
@@ -108,16 +116,16 @@ class BasicWorldDemo {
         if (child.isMesh) {
 
           child.castShadow = true;
-          
+
           child.material.map = DiffuseTexture;
           child.material.normalMap = NormalTexture;
           child.material.metalness = 0.0;
           child.material.envMap = envTexture;
           child.material.envMapIntensity = 0.1;
           child.material.needsUpdate = true;
-          
+
           console.log(child.material);
-          
+
         }
       });
 
