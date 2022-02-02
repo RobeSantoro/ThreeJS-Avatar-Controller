@@ -23,92 +23,103 @@ class BasicWorldDemo {
     window.addEventListener('resize', () => {
       this._OnWindowResize();
     }, false);
-    
+
     //Set the camera
-    const fov = 75;
+    const fov = 50;
     const aspect = window.innerWidth / window.innerHeight;
-    const near = 1.0;
-    const far = 1000.0;
+    const near = 0.1;
+    const far = 100.0;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camera.position.set(75, 20, 10);
+    this._camera.position.set(0, 1, 3);
 
     // Create the scene
     this._scene = new THREE.Scene();
-    
+
     // Add a directional light
-    let light = new THREE.DirectionalLight(0xffffff, 1.0);
-    light.position.set(100, 100, 100);
-    light.target.position.set(0, 0, 0);
-    light.castShadow = true;
-    light.shadow.bias = -0.01;
-    //light.shadow.mapsize.width = 2048;
-    //light.shadow.mapsize.height = 2048;
-    light.shadow.camera.near = 1.0;
-    light.shadow.camera.far = 500.0;
-    light.shadow.camera.left = 200;
-    light.shadow.camera.right = -200;
-    light.shadow.camera.top = 200;
-    light.shadow.camera.bottom = -200;
-    this._scene.add(light);
+    let dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    
+    dirLight.position.set(2, 2, 2);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapsize = new THREE.Vector2(2048, 2048);
+    this._scene.add(dirLight);
+
+    // Light helper
+    const helper = new THREE.DirectionalLightHelper(dirLight, 1);
+    this._scene.add(helper);
 
     // Add an ambient light    
-    light = new THREE.AmbientLight(0xffffff, 0.5);
-    this._scene.add(light);
+    const ambLight = new THREE.AmbientLight(0xffffff, 0.1);
+    this._scene.add(ambLight);
 
     // Add the OrbitControls
     const controls = new OrbitControls(this._camera, this._threejs.domElement);
     controls.enableDamping = true;
-    controls.target.set(0, 10, 0);
+    controls.target.set(0, 1, 0);
     controls.update();
 
     // Add the Skybox Texture
     const loader = new THREE.CubeTextureLoader();
-    const texture = loader.load([
+    const envTexture = loader.load([
       './resources/textures/env/posx.jpg',
       './resources/textures/env/negx.jpg',
       './resources/textures/env/posy.jpg',
       './resources/textures/env/negy.jpg',
       './resources/textures/env/posz.jpg',
-      './resources/textures/env/negz.jpg'      
+      './resources/textures/env/negz.jpg'
     ]);
-    this._scene.background = texture;
+    this._scene.background = envTexture;
 
-    this._LoadModel();
+    // Add GroundPlane
+    const plane = new THREE.Mesh(
+      new THREE.PlaneGeometry(100, 100, 10, 10),
+      new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 0.1, metalness: 0.5, envMap : envTexture }));
+    plane.castShadow = false;
+    plane.receiveShadow = true;
+    plane.rotation.x = -Math.PI / 2;
+    this._scene.add(plane);
+
+    this._LoadModel(envTexture);
     this._RAF();
   }
 
-  _LoadModel() {
-    
+  _LoadModel(envTexture) {
+
     const DiffuseTexture = new THREE.TextureLoader()
-    .load('./resources/textures/Avatar_Diffuse.jpg', (texture) => {
-      texture.encoding = THREE.sRGBEncoding;
-      texture.needsUpdate = true;
-      texture.flipY = false;
-    });
+      .load('./resources/textures/Avatar_Diffuse.jpg', (texture) => {
+        texture.encoding = THREE.sRGBEncoding;
+        texture.needsUpdate = true;
+        texture.flipY = false;
+      });
 
     const NormalTexture = new THREE.TextureLoader()
-    .load('./resources/textures/Avatar_Normal.jpg', (texture) => {
-      texture.needsUpdate = true;
-      texture.flipY = false;
+      .load('./resources/textures/Avatar_Normal.jpg', (texture) => {
+        texture.needsUpdate = true;
+        texture.flipY = false;
 
-    });
+      });
 
     const loader = new GLTFLoader();
     loader.load('./resources/models/Avatar.glb', (gltf) => {
-      
+
       const model = gltf.scene;
 
       // Cast shadows
       model.traverse((child) => {
         if (child.isMesh) {
-        
+
           child.castShadow = true;
+          
           child.material.map = DiffuseTexture;
           child.material.normalMap = NormalTexture;
+          child.material.metalness = 0.0;
+          child.material.envMap = envTexture;
+          child.material.envMapIntensity = 0.1;
+          child.material.needsUpdate = true;
+          
+          console.log(child.material);
+          
         }
       });
-      // Scale the model
-      model.scale.set(10, 10, 10);
 
       // Add the model to the scene
       this._scene.add(gltf.scene);
