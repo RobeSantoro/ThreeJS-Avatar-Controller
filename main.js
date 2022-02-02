@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
 class BasicWorldDemo {
   constructor() {
@@ -109,7 +110,8 @@ class BasicWorldDemo {
 
     gltfLoader.load('./resources/models/Avatar.glb', (gltf) => {
 
-      const model = gltf.scene;
+      console.log(gltf);
+      const model = gltf.scene;      
 
       // Cast shadows
       model.traverse((child) => {
@@ -123,8 +125,6 @@ class BasicWorldDemo {
           child.material.envMap = envTexture;
           child.material.envMapIntensity = 0.1;
           child.material.needsUpdate = true;
-
-          console.log(child.material);
 
         }
       });
