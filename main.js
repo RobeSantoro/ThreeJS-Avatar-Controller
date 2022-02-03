@@ -3,6 +3,21 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
+/* RTFKT */
+const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/b45f2152-d224-4ffb-9ecc-662993cb9866.glb';
+
+/* LONG HAIR 
+const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/cdca2fdd-f8e0-4501-b4e3-b435d0a7a63c.glb';
+*/
+
+/* LOCAL 
+const AVATAR_PATH = './resources/models/Avatar.glb';
+*/
+
+/* ANIMATIONS */
+const ANIMATIONS_PATH = '/resources/animations/Animations.glb';
+
+
 class CharacterControllerProxy {
   constructor(animations) {
     this._animations = animations;
@@ -24,84 +39,71 @@ class CharacterController {
     this._velocity = new THREE.Vector3(0, 0, 0);
 
     this._animations = {};
-    this._input = new CharacterControllerIput();
-    this._stateMachine = new CharacterFSM( new CharacterControllerProxy(this._animations));
+    this._input = new CharacterControllerInput();
+    this._stateMachine = new CharacterFSM(new CharacterControllerProxy(this._animations));
 
     this._LoadModelandAnims();
   }
 
   _LoadModelandAnims() {
 
-    // Load Textures
-    const DiffuseTexture = new THREE.TextureLoader()
-      .load('./resources/textures/Avatar_Diffuse.jpg', (texture) => {
-        texture.encoding = THREE.sRGBEncoding;
-        texture.needsUpdate = true;
-        texture.flipY = false;
-      });
+    this.loaded = false;
 
-    const NormalTexture = new THREE.TextureLoader()
-      .load('./resources/textures/Avatar_Normal.jpg', (texture) => {
-        texture.needsUpdate = true;
-        texture.flipY = false;
-      });
+    ////////////////////////////////////////////// Load the glTF model from AVATAR_PATH
 
-    // Draco loader
-    const dracoLoader = new DRACOLoader()
-    dracoLoader.setDecoderPath('./decoder/')
+    const AVATAR_DRACO_LOADER = new DRACOLoader()
+    AVATAR_DRACO_LOADER.setDecoderPath('./decoder/')
 
-    const gltfLoader = new GLTFLoader()
-    gltfLoader.setDRACOLoader(dracoLoader)
+    const AvatarModelLoader = new GLTFLoader();
+    AvatarModelLoader.setDRACOLoader(AVATAR_DRACO_LOADER);
 
-    gltfLoader.load('./resources/models/Avatar.glb', (gltf) => {
+    AvatarModelLoader.load(AVATAR_PATH, (gltf) => {
 
-      const model = gltf.scene;
+      const AvatarModel = gltf.scene;
 
-      // Cast shadows and set Materials
-      model.traverse((child) => {
+      AvatarModel.traverse((child) => {
         if (child.isMesh) {
-
           child.castShadow = true;
-
-          child.material.map = DiffuseTexture;
-          child.material.normalMap = NormalTexture;
-          child.material.metalness = 0.0;
-          //child.material.envMap = envTexture;
-          child.material.envMapIntensity = 0.1;
-          child.material.needsUpdate = true;
+          child.receiveShadow = true;
         }
       });
-
-      // Create a Group to hold the model and the skinned mesh
-      const CharacterGroup = new THREE.Group();
-      CharacterGroup.add(gltf.scene.children[0].children[0], gltf.scene.children[0].children[1]);
       
-      this._target = CharacterGroup;
-      console.log(this._target);
-
+      this._target = AvatarModel;   
       this._params.scene.add(this._target);
-      this._mixer = new THREE.AnimationMixer(this._target);
-       
-      const _OnLoad = (animName, anim) => {
-        const clip = anim;
-        const action = this._mixer.clipAction(clip);
 
-        this._animations[animName] = {
-          clip: clip,
-          action: action,
+      //////////////////////////////////////////////////////// Load the animations
+      
+      const gltfLoader = new GLTFLoader()
+      gltfLoader.setDRACOLoader(AVATAR_DRACO_LOADER)      
+
+      gltfLoader.load('./resources/animations/Animations.glb', (gltf) => {
+
+        this._mixer = new THREE.AnimationMixer(this._target);
+
+        const _OnLoad = (animName, anim) => {
+          const clip = anim;
+          const action = this._mixer.clipAction(clip);
+
+          this._animations[animName] = {
+            clip: clip,
+            action: action,
+          };
+
         };
 
-      };
+        _OnLoad('idle', gltf.animations[0]);
+        _OnLoad('walk', gltf.animations[1]);
+        _OnLoad('run', gltf.animations[2]);
+        _OnLoad('dance', gltf.animations[3]);
 
-      _OnLoad('idle', gltf.animations[0]);
-      _OnLoad('walk', gltf.animations[1]);
-      _OnLoad('run', gltf.animations[2]);
-      _OnLoad('dance', gltf.animations[3]);
+        this._stateMachine.SetState('idle');
 
-      this._stateMachine.SetState('idle');
+        //console.log(this._target);
+        //console.log(this._animations);
+        //console.log(this._mixer);
 
-      console.log(this._animations);
-      console.log(this._mixer);
+        this.loaded = true;
+      });
 
     });
 
@@ -137,8 +139,12 @@ class CharacterController {
       acc.multiplyScalar(2.0);
     }
 
-    if (this._stateMachine._currentState.Name == 'dance') {
-      acc.multiplyScalar(0.0);
+    if (this.loaded == true) {
+
+      if (this._stateMachine._currentState.Name == 'dance') {
+        acc.multiplyScalar(0.0);
+      }
+
     }
 
     if (this._input._keys.forward) {
@@ -183,12 +189,8 @@ class CharacterController {
       this._mixer.update(timeInSeconds);
     }
   }
-
-
-
-
 }
-class CharacterControllerIput {
+class CharacterControllerInput {
   constructor() {
     this._Init();
   }
@@ -591,7 +593,9 @@ class World {
   }
 
   _Step(timeElapsed) {
+
     const timeElapsedS = timeElapsed * 0.001;
+
     if (this._mixers) {
       this._mixers.map(m => m.update(timeElapsedS));
     }
@@ -607,4 +611,5 @@ let _APP = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   _APP = new World();
+  //console.log(_APP);
 });
