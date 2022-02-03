@@ -3,20 +3,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 
-/* RTFKT */
-const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/b45f2152-d224-4ffb-9ecc-662993cb9866.glb';
-
-/* LONG HAIR 
-const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/cdca2fdd-f8e0-4501-b4e3-b435d0a7a63c.glb';
-*/
-
-/* LOCAL 
-const AVATAR_PATH = './resources/models/Avatar.glb';
-*/
+/* RTFKT      const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/b45f2152-d224-4ffb-9ecc-662993cb9866.glb';*/
+/* LONG HAIR  const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/cdca2fdd-f8e0-4501-b4e3-b435d0a7a63c.glb';*/
+/* LOCAL */   const AVATAR_PATH = './resources/models/Avatar.glb';
 
 /* ANIMATIONS */
 const ANIMATIONS_PATH = '/resources/animations/Animations.glb';
-
 
 class CharacterControllerProxy {
   constructor(animations) {
@@ -26,7 +18,8 @@ class CharacterControllerProxy {
   get animations() {
     return this._animations;
   }
-}
+};
+
 class CharacterController {
   constructor(params) {
     this._Init(params);
@@ -49,7 +42,7 @@ class CharacterController {
 
     this.loaded = false;
 
-    ////////////////////////////////////////////// Load the glTF model from AVATAR_PATH
+    // Load the glTF model from AVATAR_PATH
 
     const AVATAR_DRACO_LOADER = new DRACOLoader()
     AVATAR_DRACO_LOADER.setDecoderPath('./decoder/')
@@ -64,14 +57,14 @@ class CharacterController {
       AvatarModel.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true;
-          child.receiveShadow = true;
+          //child.receiveShadow = true;
         }
       });
       
       this._target = AvatarModel;   
       this._params.scene.add(this._target);
 
-      //////////////////////////////////////////////////////// Load the animations
+      // Load the animations
       
       const gltfLoader = new GLTFLoader()
       gltfLoader.setDRACOLoader(AVATAR_DRACO_LOADER)      
@@ -189,7 +182,8 @@ class CharacterController {
       this._mixer.update(timeInSeconds);
     }
   }
-}
+};
+
 class CharacterControllerInput {
   constructor() {
     this._Init();
@@ -253,7 +247,8 @@ class CharacterControllerInput {
         break;
     }
   }
-}
+};
+
 class FiniteStateMachine {
   constructor() {
     this._states = {};
@@ -286,6 +281,7 @@ class FiniteStateMachine {
     }
   }
 };
+
 class CharacterFSM extends FiniteStateMachine {
   constructor(proxy) {
     super();
@@ -300,6 +296,7 @@ class CharacterFSM extends FiniteStateMachine {
     this._AddState('dance', DanceState);
   }
 };
+
 class State {
   constructor(parent) {
     this._parent = parent;
@@ -309,6 +306,7 @@ class State {
   Exit() { }
   Update() { }
 };
+
 class DanceState extends State {
   constructor(parent) {
     super(parent);
@@ -358,6 +356,7 @@ class DanceState extends State {
   Update(_) {
   }
 };
+
 class WalkState extends State {
   constructor(parent) {
     super(parent);
@@ -404,6 +403,7 @@ class WalkState extends State {
     this._parent.SetState('idle');
   }
 };
+
 class RunState extends State {
   constructor(parent) {
     super(parent);
@@ -450,6 +450,7 @@ class RunState extends State {
     this._parent.SetState('idle');
   }
 };
+
 class IdleState extends State {
   constructor(parent) {
     super(parent);
@@ -485,6 +486,7 @@ class IdleState extends State {
     }
   }
 };
+
 class World {
   constructor() {
     this._Initialize();
@@ -539,23 +541,35 @@ class World {
     // Add the Cubemap
     const loader = new THREE.CubeTextureLoader();
     const envTexture = loader.load([
-      './resources/textures/env/posx.jpg',
-      './resources/textures/env/negx.jpg',
-      './resources/textures/env/posy.jpg',
-      './resources/textures/env/negy.jpg',
-      './resources/textures/env/posz.jpg',
-      './resources/textures/env/negz.jpg'
+      './resources/textures/env/right.jpeg',  // posx
+      './resources/textures/env/left.jpeg',   // negx
+      './resources/textures/env/top.jpeg',    // posy
+      './resources/textures/env/bottom.jpeg', // negy
+      './resources/textures/env/front.jpeg',   // negz
+      './resources/textures/env/back.jpeg',   // posz
     ]);
+    envTexture.encoding = THREE.sRGBEncoding;
     this._scene.background = envTexture;
 
     // Add GroundPlane
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(100, 100, 10, 10),
-      new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 0.1, metalness: 0.5, envMap: envTexture }));
+      new THREE.MeshStandardMaterial({ color: 0x485511, roughness: 0.1, metalness: 0.1, envMap: envTexture, envMapIntensity: 0.25 }));
     plane.castShadow = false;
     plane.receiveShadow = true;
     plane.rotation.x = -Math.PI / 2;
     this._scene.add(plane);
+
+    // Add fading to distance grid
+    const grid = new THREE.InfiniteGridHelper(100, 100, 0xFFFFFF, 1.0);
+
+    
+    this._scene.add(grid);
+
+    // Add axes
+    const axes = new THREE.AxesHelper(1);
+    //this._scene.add(axes);
+
 
     this._mixers = [];
     this._previousRAF = null;
@@ -604,7 +618,7 @@ class World {
       this._controls.Update(timeElapsedS);
     }
   }
-}
+};
 
 
 let _APP = null;
