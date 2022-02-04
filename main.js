@@ -560,10 +560,8 @@ class World {
     plane.rotation.x = -Math.PI / 2;
     this._scene.add(plane);
 
-    // Add fading to distance grid
-    const grid = new THREE.InfiniteGridHelper(100, 100, 0xFFFFFF, 1.0);
-
-    
+    // Add grid
+    const grid = new THREE.GridHelper(100, 10, 0xffffff, 0xffffff);    
     this._scene.add(grid);
 
     // Add axes
