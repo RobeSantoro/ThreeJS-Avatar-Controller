@@ -60,13 +60,13 @@ class CharacterController {
           //child.receiveShadow = true;
         }
       });
-      
-      this._target = AvatarModel;   
+
+      this._target = AvatarModel;
       this._params.scene.add(this._target);
 
       // Load the animations form Animations.glb file     
       const gltfLoader = new GLTFLoader()
-      gltfLoader.setDRACOLoader(DRACO_LOADER)      
+      gltfLoader.setDRACOLoader(DRACO_LOADER)
 
       gltfLoader.load(ANIMATIONS_PATH, (gltf) => {
 
@@ -91,11 +91,11 @@ class CharacterController {
         _OnLoad('jump', gltf.animations[5]);
         _OnLoad('jumprun', gltf.animations[6]);
 
-        
+
         //console.log(this._target);
         //console.log(this._animations);
         //console.log(this._mixer);
-        
+
         this.loaded = true;
         this._stateMachine.SetState('idle');
 
@@ -106,7 +106,7 @@ class CharacterController {
 
 
   }
-  
+
   get Position() {
     return this._position;
   }
@@ -370,7 +370,7 @@ class IdleState extends State {
       this._parent.SetState('walkback');
     } else if (input._keys.space) {
       this._parent.SetState('jump');
-    }else if (input._keys.effe) {
+    } else if (input._keys.effe) {
       this._parent.SetState('dance');
     }
   }
@@ -547,7 +547,7 @@ class WalkBackState extends State {
       }
 
       curAction.crossFadeFrom(prevAction, 0.5, true);
-      curAction.play();       
+      curAction.play();
     } else {
       curAction.play();
     }
@@ -578,10 +578,10 @@ class RunState extends State {
   }
 
   Enter(prevState) {
-    const curAction = this._parent._proxy._animations['run'].action;   
+    const curAction = this._parent._proxy._animations['run'].action;
 
-    if (prevState) {      
-      
+    if (prevState) {
+
       const prevAction = this._parent._proxy._animations[prevState.Name].action;
       curAction.enabled = true;
 
@@ -594,14 +594,14 @@ class RunState extends State {
         curAction.setEffectiveTimeScale(1.0);
         curAction.setEffectiveWeight(1.0);
         curAction.crossFadeFrom(prevAction, 1, true);
-        curAction.play();        
+        curAction.play();
 
       } else {
         curAction.time = 0.0;
         curAction.setEffectiveTimeScale(1.0);
         curAction.setEffectiveWeight(1.0);
 
-      }          
+      }
 
       curAction.crossFadeFrom(prevAction, 0.1, true);
       curAction.play();
@@ -683,12 +683,13 @@ class ThirdPersonCamera {
     this._params = params;
     this._camera = params.camera;
 
+
     this._currentPosition = new THREE.Vector3();
     this._currentLookat = new THREE.Vector3();
   }
 
   _CalculateIdealOffset() {
-    const idealOffset = new THREE.Vector3(0, 1.5, -5);    
+    const idealOffset = new THREE.Vector3(0, 1.5, -2);
     idealOffset.applyQuaternion(this._params.target.Rotation);
     idealOffset.add(this._params.target.Position);
     return idealOffset;
@@ -714,8 +715,11 @@ class ThirdPersonCamera {
 
     this._camera.position.copy(this._currentPosition);
     this._camera.lookAt(this._currentLookat);
+
+    //console.log(this._mouseCoords)
+
   }
-  
+
 };
 
 class World {
@@ -733,11 +737,17 @@ class World {
     this._threejs.setPixelRatio(window.devicePixelRatio);
     this._threejs.setSize(window.innerWidth, window.innerHeight);
 
-    document.body.appendChild(this._threejs.domElement);
+    this._canvas = this._threejs.domElement
+    document.body.appendChild(this._canvas);
 
     //Add the resize event listener
     window.addEventListener('resize', () => {
       this._OnWindowResize();
+    }, false);
+
+    // Add the mouse move event listener
+    this._canvas.addEventListener('mousemove', (e) => {
+      this._OnMouseMove(e);
     }, false);
 
     //Set the camera
@@ -746,7 +756,7 @@ class World {
     const near = 0.1;
     const far = 100.0;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._camera.position.set(0, 1, 3);
+    //this._camera.position.set(0, 1, 3);
 
     // Create the scene
     this._scene = new THREE.Scene();
@@ -762,12 +772,6 @@ class World {
     // Add an ambient light    
     const ambLight = new THREE.AmbientLight(0xffffff, 0.1);
     this._scene.add(ambLight);
-
-    // Add the OrbitControls
-    /* const controls = new OrbitControls(this._camera, this._threejs.domElement);
-    controls.enableDamping = true;
-    controls.target.set(0, 1, 0);
-    controls.update(); */
 
     // Add the Cubemap
     const loader = new THREE.CubeTextureLoader();
@@ -792,38 +796,45 @@ class World {
     this._scene.add(plane);
 
     // Add grid
-    const grid = new THREE.GridHelper(50, 100, 0xffffff, 0xffffff);    
-    this._scene.add(grid);
+    //const grid = new THREE.GridHelper(50, 100, 0xffffff, 0xffffff);    
+    //this._scene.add(grid);
 
     // Add axes
-    const axes = new THREE.AxesHelper(1);
+    //const axes = new THREE.AxesHelper(1);
     //this._scene.add(axes);
-
 
     this._mixers = [];
     this._previousRAF = null;
+    this._mouseCoords = { x: window.innerWidth/2, y: window.innerHeight/2 };
 
     this._LoadAnimatedModel();
-    this._RAF();    
+    this._RAF();
   }
 
   _LoadAnimatedModel() {
+
     const params = {
       camera: this._camera,
-      scene: this._scene,
+      scene: this._scene
     }
+
     this._controls = new CharacterController(params);
 
     this._thirdPersonCamera = new ThirdPersonCamera({
       camera: this._camera,
       target: this._controls,
-    });    
+    });
   }
 
   _OnWindowResize() {
     this._camera.aspect = window.innerWidth / window.innerHeight;
     this._camera.updateProjectionMatrix();
     this._threejs.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  _OnMouseMove(e) {
+    this._mouseCoords = { x: e.clientX, y: e.clientY };
+    return this._mouseCoords;
   }
 
   _RAF() {
@@ -844,15 +855,14 @@ class World {
 
     const timeElapsedS = timeElapsed * 0.001;
 
-    if (this._mixers) {
-      this._mixers.map(m => m.update(timeElapsedS));
-    }
+    if (this._mixers) { this._mixers.map(m => m.update(timeElapsedS)); }
 
-    if (this._controls) {
-      this._controls.Update(timeElapsedS);
-    }
+    if (this._controls) { this._controls.Update(timeElapsedS); }
 
     this._thirdPersonCamera.Update(timeElapsedS);
+
+    console.log(this._mouseCoords);
+    
 
   }
 };
@@ -862,5 +872,5 @@ let _APP = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   _APP = new World();
-  //console.log(_APP);
+  console.log(_APP);
 });
