@@ -28,7 +28,7 @@ class CharacterController {
   _Init(params) {
     this._params = params;
     this._decceleration = new THREE.Vector3(-0.0005, -0.0001, -5.0);
-    this._acceleration = new THREE.Vector3(1, 0.25, 50.0);
+    this._acceleration = new THREE.Vector3(1.0, 0.25, 10.0);
     this._velocity = new THREE.Vector3(0, 0, 0);
 
     this._animations = {};
@@ -129,7 +129,7 @@ class CharacterController {
 
     const acc = this._acceleration.clone();
     if (this._input._keys.shift) {
-      acc.multiplyScalar(2.0);
+      acc.multiplyScalar(3.0);
     }
 
     if (this.loaded == true) {
@@ -561,7 +561,7 @@ class World {
     this._scene.add(plane);
 
     // Add grid
-    const grid = new THREE.GridHelper(100, 10, 0xffffff, 0xffffff);    
+    const grid = new THREE.GridHelper(50, 100, 0xffffff, 0xffffff);    
     this._scene.add(grid);
 
     // Add axes
