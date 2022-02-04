@@ -452,7 +452,7 @@ class WalkBackState extends State {
   Update(timeElapsed, input) {
     if (input._keys.backward) {
       if (input._keys.shift) {
-        this._parent.SetState('run');
+        //this._parent.SetState('run');
       }
       return;
     }
@@ -540,7 +540,7 @@ class IdleState extends State {
       this._parent.SetState('walk');
     } else if (input._keys.backward) {
       this._parent.SetState('walkback');
-    } else if (input._keys.space) {
+    } else if (input._keys.effe) {
       this._parent.SetState('dance');
     }
   }
