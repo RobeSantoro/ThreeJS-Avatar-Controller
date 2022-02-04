@@ -43,11 +43,11 @@ class CharacterController {
     this.loaded = false;
 
     // Load the glTF model from AVATAR_PATH
-    const AVATAR_DRACO_LOADER = new DRACOLoader()
-    AVATAR_DRACO_LOADER.setDecoderPath('./decoder/')
+    const DRACO_LOADER = new DRACOLoader()
+    DRACO_LOADER.setDecoderPath('./decoder/')
 
     const AvatarModelLoader = new GLTFLoader();
-    AvatarModelLoader.setDRACOLoader(AVATAR_DRACO_LOADER);
+    AvatarModelLoader.setDRACOLoader(DRACO_LOADER);
 
     AvatarModelLoader.load(AVATAR_PATH, (gltf) => {
 
@@ -66,9 +66,9 @@ class CharacterController {
 
       // Load the animations form Animations.glb file     
       const gltfLoader = new GLTFLoader()
-      gltfLoader.setDRACOLoader(AVATAR_DRACO_LOADER)      
+      gltfLoader.setDRACOLoader(DRACO_LOADER)      
 
-      gltfLoader.load('./resources/animations/Animations.glb', (gltf) => {
+      gltfLoader.load(ANIMATIONS_PATH, (gltf) => {
 
         this._mixer = new THREE.AnimationMixer(this._target);
 
@@ -193,7 +193,7 @@ class CharacterControllerInput {
       backward: false,
       left: false,
       right: false,
-      space: false,
+      effe: false,
       shift: false,
     };
     document.addEventListener('keydown', (e) => this._onKeyDown(e), false);
@@ -214,8 +214,8 @@ class CharacterControllerInput {
       case 68: // d
         this._keys.right = true;
         break;
-      case 32: // SPACE
-        this._keys.space = true;
+      case 70: // f
+        this._keys.effe = true;
         break;
       case 16: // SHIFT
         this._keys.shift = true;
@@ -237,8 +237,8 @@ class CharacterControllerInput {
       case 68: // d
         this._keys.right = false;
         break;
-      case 32: // SPACE
-        this._keys.space = false;
+      case 70: // f
+        this._keys.effe = false;
         break;
       case 16: // SHIFT
         this._keys.shift = false;
@@ -345,7 +345,6 @@ class DanceState extends State {
 
   _Cleanup() {
     const action = this._parent._proxy._animations['dance'].action;
-
     action.getMixer().removeEventListener('finished', this._CleanupCallback);
   }
 
