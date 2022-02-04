@@ -89,6 +89,7 @@ class CharacterController {
         _OnLoad('dance', gltf.animations[3]);
         _OnLoad('walkback', gltf.animations[4]);
         _OnLoad('jump', gltf.animations[5]);
+        _OnLoad('jumprun', gltf.animations[6]);
 
         
         //console.log(this._target);
@@ -321,6 +322,7 @@ class CharacterFSM extends FiniteStateMachine {
     this._AddState('dance', DanceState);
     this._AddState('walkback', WalkBackState);
     this._AddState('jump', JumpState);
+    this._AddState('jumprun', JumpRunState);
   }
 };
 
@@ -332,6 +334,46 @@ class State {
   Enter() { }
   Exit() { }
   Update() { }
+};
+
+class IdleState extends State {
+  constructor(parent) {
+    super(parent);
+  }
+
+  get Name() {
+    return 'idle';
+  }
+
+  Enter(prevState) {
+    const idleAction = this._parent._proxy._animations['idle'].action;
+    if (prevState) {
+      const prevAction = this._parent._proxy._animations[prevState.Name].action;
+      idleAction.time = 0.0;
+      idleAction.enabled = true;
+      idleAction.setEffectiveTimeScale(1.0);
+      idleAction.setEffectiveWeight(1.0);
+      idleAction.crossFadeFrom(prevAction, 0.2, true);
+      idleAction.play();
+    } else {
+      idleAction.play();
+    }
+  }
+
+  Exit() {
+  }
+
+  Update(_, input) {
+    if (input._keys.forward) {
+      this._parent.SetState('walk');
+    } else if (input._keys.backward) {
+      this._parent.SetState('walkback');
+    } else if (input._keys.space) {
+      this._parent.SetState('jump');
+    }else if (input._keys.effe) {
+      this._parent.SetState('dance');
+    }
+  }
 };
 
 class DanceState extends State {
@@ -407,7 +449,7 @@ class JumpState extends State {
       curAction.reset();
       curAction.setLoop(THREE.LoopOnce, 1);
       curAction.clampWhenFinished = true;
-      curAction.crossFadeFrom(prevAction, 0.2, true);
+      curAction.crossFadeFrom(prevAction, 0.1, true);
       curAction.play();
     } else {
       curAction.play();
@@ -420,7 +462,7 @@ class JumpState extends State {
   }
 
   _Cleanup() {
-    const action = this._parent._proxy._animations['dance'].action;
+    const action = this._parent._proxy._animations['jump'].action;
     action.getMixer().removeEventListener('finished', this._CleanupCallback);
   }
 
@@ -536,23 +578,34 @@ class RunState extends State {
   }
 
   Enter(prevState) {
-    const curAction = this._parent._proxy._animations['run'].action;
-    if (prevState) {
-      const prevAction = this._parent._proxy._animations[prevState.Name].action;
+    const curAction = this._parent._proxy._animations['run'].action;   
 
+    if (prevState) {      
+      
+      const prevAction = this._parent._proxy._animations[prevState.Name].action;
       curAction.enabled = true;
 
       if (prevState.Name == 'walk') {
         const ratio = curAction.getClip().duration / prevAction.getClip().duration;
         curAction.time = prevAction.time * ratio;
+
+      } else if (prevState.Name == 'jumprun') {
+        curAction.time = 0.0;
+        curAction.setEffectiveTimeScale(1.0);
+        curAction.setEffectiveWeight(1.0);
+        curAction.crossFadeFrom(prevAction, 1, true);
+        curAction.play();        
+
       } else {
         curAction.time = 0.0;
         curAction.setEffectiveTimeScale(1.0);
         curAction.setEffectiveWeight(1.0);
-      }
 
-      curAction.crossFadeFrom(prevAction, 0.5, true);
+      }          
+
+      curAction.crossFadeFrom(prevAction, 0.1, true);
       curAction.play();
+
     } else {
       curAction.play();
     }
@@ -566,6 +619,9 @@ class RunState extends State {
       if (!input._keys.shift) {
         this._parent.SetState('walk');
       }
+      if (input._keys.space) {
+        this._parent.SetState('jumprun');
+      }
       return;
     }
 
@@ -573,43 +629,52 @@ class RunState extends State {
   }
 };
 
-class IdleState extends State {
+class JumpRunState extends State {
   constructor(parent) {
     super(parent);
+
+    this._FinishedCallback = () => {
+      this._Finished();
+    }
   }
 
   get Name() {
-    return 'idle';
+    return 'jumprun';
   }
 
   Enter(prevState) {
-    const idleAction = this._parent._proxy._animations['idle'].action;
+    const curAction = this._parent._proxy._animations['jumprun'].action;
+    const mixer = curAction.getMixer();
+    mixer.addEventListener('finished', this._FinishedCallback);
+
     if (prevState) {
       const prevAction = this._parent._proxy._animations[prevState.Name].action;
-      idleAction.time = 0.0;
-      idleAction.enabled = true;
-      idleAction.setEffectiveTimeScale(1.0);
-      idleAction.setEffectiveWeight(1.0);
-      idleAction.crossFadeFrom(prevAction, 0.5, true);
-      idleAction.play();
+
+      curAction.reset();
+      curAction.setLoop(THREE.LoopOnce, 1);
+      curAction.clampWhenFinished = true;
+      curAction.crossFadeFrom(prevAction, 0.1, true);
+      curAction.play();
     } else {
-      idleAction.play();
+      curAction.play();
     }
+  }
+
+  _Finished() {
+    this._Cleanup();
+    this._parent.SetState('run');
+  }
+
+  _Cleanup() {
+    const action = this._parent._proxy._animations['jumprun'].action;
+    action.getMixer().removeEventListener('finished', this._CleanupCallback);
   }
 
   Exit() {
+    this._Cleanup();
   }
 
-  Update(_, input) {
-    if (input._keys.forward) {
-      this._parent.SetState('walk');
-    } else if (input._keys.backward) {
-      this._parent.SetState('walkback');
-    } else if (input._keys.space) {
-      this._parent.SetState('jump');
-    }else if (input._keys.effe) {
-      this._parent.SetState('dance');
-    }
+  Update(_) {
   }
 };
 
@@ -623,14 +688,14 @@ class ThirdPersonCamera {
   }
 
   _CalculateIdealOffset() {
-    const idealOffset = new THREE.Vector3(-1, 2, -3);    
+    const idealOffset = new THREE.Vector3(0, 1.5, -5);    
     idealOffset.applyQuaternion(this._params.target.Rotation);
     idealOffset.add(this._params.target.Position);
     return idealOffset;
   }
 
   _CalculateIdealLookat() {
-    const idealLookat = new THREE.Vector3(0, 1, 5);
+    const idealLookat = new THREE.Vector3(0, 1.5, 5);
     idealLookat.applyQuaternion(this._params.target.Rotation);
     idealLookat.add(this._params.target.Position);
     return idealLookat;
@@ -651,7 +716,7 @@ class ThirdPersonCamera {
     this._camera.lookAt(this._currentLookat);
   }
   
-}
+};
 
 class World {
   constructor() {
