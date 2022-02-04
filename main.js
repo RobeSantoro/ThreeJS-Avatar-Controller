@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-
 /* RTFKT      const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/b45f2152-d224-4ffb-9ecc-662993cb9866.glb';*/
 /* LONG HAIR  const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/cdca2fdd-f8e0-4501-b4e3-b435d0a7a63c.glb';*/
 /* LOCAL */   const AVATAR_PATH = './resources/models/Avatar.glb';
@@ -30,6 +29,7 @@ class CharacterController {
     this._decceleration = new THREE.Vector3(-0.0005, -0.0001, -5.0);
     this._acceleration = new THREE.Vector3(1.0, 0.25, 10.0);
     this._velocity = new THREE.Vector3(0, 0, 0);
+    this._position = new THREE.Vector3();
 
     this._animations = {};
     this._input = new CharacterControllerInput();
@@ -89,18 +89,29 @@ class CharacterController {
         _OnLoad('dance', gltf.animations[3]);
         _OnLoad('walkback', gltf.animations[4]);
 
-        this._stateMachine.SetState('idle');
-
+        
         //console.log(this._target);
-        console.log(this._animations);
+        //console.log(this._animations);
         //console.log(this._mixer);
-
+        
         this.loaded = true;
+        this._stateMachine.SetState('idle');
       });
 
     });
 
 
+  }
+  
+  get Position() {
+    return this._position;
+  }
+
+  get Rotation() {
+    if (!this._target) {
+      return new THREE.Quaternion();
+    }
+    return this._target.quaternion;
   }
 
   Update(timeInSeconds) {
@@ -174,7 +185,7 @@ class CharacterController {
     controlObject.position.add(forward);
     controlObject.position.add(sideways);
 
-    oldPosition.copy(controlObject.position);
+    this._position.copy(controlObject.position);
 
     if (this._mixer) {
       this._mixer.update(timeInSeconds);
@@ -535,6 +546,46 @@ class IdleState extends State {
   }
 };
 
+class ThirdPersonCamera {
+  constructor(params) {
+    this._params = params;
+    this._camera = params.camera;
+
+    this._currentPosition = new THREE.Vector3();
+    this._currentLookat = new THREE.Vector3();
+  }
+
+  _CalculateIdealOffset() {
+    const idealOffset = new THREE.Vector3(-1.5, 2, -3);    
+    idealOffset.applyQuaternion(this._params.target.Rotation);
+    idealOffset.add(this._params.target.Position);
+    return idealOffset;
+  }
+
+  _CalculateIdealLookat() {
+    const idealLookat = new THREE.Vector3(0, 1, 5);
+    idealLookat.applyQuaternion(this._params.target.Rotation);
+    idealLookat.add(this._params.target.Position);
+    return idealLookat;
+  }
+
+  Update(timeElapsed) {
+    const idealOffset = this._CalculateIdealOffset();
+    const idealLookat = this._CalculateIdealLookat();
+
+    // const t = 0.05;
+    // const t = 4.0 * timeElapsed;
+    const t = 1.0 - Math.pow(0.001, timeElapsed);
+
+    this._currentPosition.lerp(idealOffset, t);
+    this._currentLookat.lerp(idealLookat, t);
+
+    this._camera.position.copy(this._currentPosition);
+    this._camera.lookAt(this._currentLookat);
+  }
+  
+}
+
 class World {
   constructor() {
     this._Initialize();
@@ -581,10 +632,10 @@ class World {
     this._scene.add(ambLight);
 
     // Add the OrbitControls
-    const controls = new OrbitControls(this._camera, this._threejs.domElement);
+    /* const controls = new OrbitControls(this._camera, this._threejs.domElement);
     controls.enableDamping = true;
     controls.target.set(0, 1, 0);
-    controls.update();
+    controls.update(); */
 
     // Add the Cubemap
     const loader = new THREE.CubeTextureLoader();
@@ -621,7 +672,7 @@ class World {
     this._previousRAF = null;
 
     this._LoadAnimatedModel();
-    this._RAF();
+    this._RAF();    
   }
 
   _LoadAnimatedModel() {
@@ -630,6 +681,11 @@ class World {
       scene: this._scene,
     }
     this._controls = new CharacterController(params);
+
+    this._thirdPersonCamera = new ThirdPersonCamera({
+      camera: this._camera,
+      target: this._controls,
+    });    
   }
 
   _OnWindowResize() {
@@ -663,6 +719,9 @@ class World {
     if (this._controls) {
       this._controls.Update(timeElapsedS);
     }
+
+    this._thirdPersonCamera.Update(timeElapsedS);
+
   }
 };
 
