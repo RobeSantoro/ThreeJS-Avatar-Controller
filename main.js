@@ -799,12 +799,12 @@ class World {
     this._scene.add(plane);
 
     // Add grid
-    //const grid = new THREE.GridHelper(50, 100, 0xffffff, 0xffffff);    
-    //this._scene.add(grid);
+    const grid = new THREE.GridHelper(50, 100, 0xffffff, 0xffffff);    
+    this._scene.add(grid);
 
     // Add axes
-    //const axes = new THREE.AxesHelper(1);
-    //this._scene.add(axes);
+    const axes = new THREE.AxesHelper(1);
+    this._scene.add(axes);
 
     this._mixers = [];
     this._previousRAF = null;
@@ -832,7 +832,6 @@ class World {
     this._RAF();
   }
 
-
   _OnWindowResize() {
     this._camera.aspect = window.innerWidth / window.innerHeight;
     this._camera.updateProjectionMatrix();
@@ -841,8 +840,8 @@ class World {
 
   _OnMouseMove(e) {
     this._mouseCoords = { x: e.clientX, y: e.clientY };
-    return this._mouseCoords;
     console.log(this._mouseCoords);
+    return this._mouseCoords;
   }
 
   _RAF() {
