@@ -8,3 +8,4 @@ ThreeJS Character Controller -  OOP Approach based on SimonDev Tutorials
 npm install
 npm run dev
 ```
+[Live Demo](https://three-js-avatar-controller.vercel.app/)
