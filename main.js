@@ -43,7 +43,6 @@ class CharacterController {
     this.loaded = false;
 
     // Load the glTF model from AVATAR_PATH
-
     const AVATAR_DRACO_LOADER = new DRACOLoader()
     AVATAR_DRACO_LOADER.setDecoderPath('./decoder/')
 
@@ -54,6 +53,7 @@ class CharacterController {
 
       const AvatarModel = gltf.scene;
 
+      // Traverse and Cast Shadow
       AvatarModel.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true;
@@ -64,8 +64,7 @@ class CharacterController {
       this._target = AvatarModel;   
       this._params.scene.add(this._target);
 
-      // Load the animations
-      
+      // Load the animations form Animations.glb file     
       const gltfLoader = new GLTFLoader()
       gltfLoader.setDRACOLoader(AVATAR_DRACO_LOADER)      
 
@@ -88,11 +87,12 @@ class CharacterController {
         _OnLoad('walk', gltf.animations[1]);
         _OnLoad('run', gltf.animations[2]);
         _OnLoad('dance', gltf.animations[3]);
+        _OnLoad('walkback', gltf.animations[4]);
 
         this._stateMachine.SetState('idle');
 
         //console.log(this._target);
-        //console.log(this._animations);
+        console.log(this._animations);
         //console.log(this._mixer);
 
         this.loaded = true;
@@ -133,11 +133,9 @@ class CharacterController {
     }
 
     if (this.loaded == true) {
-
       if (this._stateMachine._currentState.Name == 'dance') {
         acc.multiplyScalar(0.0);
       }
-
     }
 
     if (this._input._keys.forward) {
@@ -278,6 +276,7 @@ class FiniteStateMachine {
   Update(timeElapsed, input) {
     if (this._currentState) {
       this._currentState.Update(timeElapsed, input);
+      //console.log(this._currentState.Name);
     }
   }
 };
@@ -294,6 +293,7 @@ class CharacterFSM extends FiniteStateMachine {
     this._AddState('walk', WalkState);
     this._AddState('run', RunState);
     this._AddState('dance', DanceState);
+    this._AddState('walkback', WalkBackState);
   }
 };
 
@@ -393,7 +393,54 @@ class WalkState extends State {
   }
 
   Update(timeElapsed, input) {
-    if (input._keys.forward || input._keys.backward) {
+    if (input._keys.forward) {
+      if (input._keys.shift) {
+        this._parent.SetState('run');
+      }
+      return;
+    }
+
+    this._parent.SetState('idle');
+  }
+};
+
+class WalkBackState extends State {
+  constructor(parent) {
+    super(parent);
+  }
+
+  get Name() {
+    return 'walkback';
+  }
+
+  Enter(prevState) {
+    const curAction = this._parent._proxy._animations['walkback'].action;
+    if (prevState) {
+      const prevAction = this._parent._proxy._animations[prevState.Name].action;
+
+      curAction.enabled = true;
+
+      if (prevState.Name == 'run') {
+        const ratio = curAction.getClip().duration / prevAction.getClip().duration;
+        curAction.time = prevAction.time * ratio;
+      } else {
+        curAction.time = 0.0;
+        curAction.setEffectiveTimeScale(1.0);
+        curAction.setEffectiveWeight(1.0);
+      }
+
+      curAction.crossFadeFrom(prevAction, 0.5, true);
+      curAction.play();       
+    } else {
+      curAction.play();
+    }
+  }
+
+  Exit() {
+  }
+
+  Update(timeElapsed, input) {
+    if (input._keys.backward) {
       if (input._keys.shift) {
         this._parent.SetState('run');
       }
@@ -440,7 +487,7 @@ class RunState extends State {
   }
 
   Update(timeElapsed, input) {
-    if (input._keys.forward || input._keys.backward) {
+    if (input._keys.forward) {
       if (!input._keys.shift) {
         this._parent.SetState('walk');
       }
@@ -479,8 +526,10 @@ class IdleState extends State {
   }
 
   Update(_, input) {
-    if (input._keys.forward || input._keys.backward) {
+    if (input._keys.forward) {
       this._parent.SetState('walk');
+    } else if (input._keys.backward) {
+      this._parent.SetState('walkback');
     } else if (input._keys.space) {
       this._parent.SetState('dance');
     }
