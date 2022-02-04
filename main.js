@@ -88,6 +88,7 @@ class CharacterController {
         _OnLoad('run', gltf.animations[2]);
         _OnLoad('dance', gltf.animations[3]);
         _OnLoad('walkback', gltf.animations[4]);
+        _OnLoad('jump', gltf.animations[5]);
 
         
         //console.log(this._target);
@@ -96,6 +97,8 @@ class CharacterController {
         
         this.loaded = true;
         this._stateMachine.SetState('idle');
+
+        //this._mixer.action.play();
       });
 
     });
@@ -187,6 +190,11 @@ class CharacterController {
 
     this._position.copy(controlObject.position);
 
+    if (this._input._keys.space) {
+      //console.log('jump'); //////////////////////////////////////////////////////////
+
+    }
+
     if (this._mixer) {
       this._mixer.update(timeInSeconds);
     }
@@ -206,6 +214,7 @@ class CharacterControllerInput {
       right: false,
       effe: false,
       shift: false,
+      space: false,
     };
     document.addEventListener('keydown', (e) => this._onKeyDown(e), false);
     document.addEventListener('keyup', (e) => this._onKeyUp(e), false);
@@ -231,6 +240,9 @@ class CharacterControllerInput {
       case 16: // SHIFT
         this._keys.shift = true;
         break;
+      case 32: // SPACE
+        this._keys.space = true;
+        break;
     }
   }
 
@@ -253,6 +265,9 @@ class CharacterControllerInput {
         break;
       case 16: // SHIFT
         this._keys.shift = false;
+        break;
+      case 32: // SPACE
+        this._keys.space = false;
         break;
     }
   }
@@ -305,6 +320,7 @@ class CharacterFSM extends FiniteStateMachine {
     this._AddState('run', RunState);
     this._AddState('dance', DanceState);
     this._AddState('walkback', WalkBackState);
+    this._AddState('jump', JumpState);
   }
 };
 
@@ -333,6 +349,55 @@ class DanceState extends State {
 
   Enter(prevState) {
     const curAction = this._parent._proxy._animations['dance'].action;
+    const mixer = curAction.getMixer();
+    mixer.addEventListener('finished', this._FinishedCallback);
+
+    if (prevState) {
+      const prevAction = this._parent._proxy._animations[prevState.Name].action;
+
+      curAction.reset();
+      curAction.setLoop(THREE.LoopOnce, 1);
+      curAction.clampWhenFinished = true;
+      curAction.crossFadeFrom(prevAction, 0.2, true);
+      curAction.play();
+    } else {
+      curAction.play();
+    }
+  }
+
+  _Finished() {
+    this._Cleanup();
+    this._parent.SetState('idle');
+  }
+
+  _Cleanup() {
+    const action = this._parent._proxy._animations['dance'].action;
+    action.getMixer().removeEventListener('finished', this._CleanupCallback);
+  }
+
+  Exit() {
+    this._Cleanup();
+  }
+
+  Update(_) {
+  }
+};
+
+class JumpState extends State {
+  constructor(parent) {
+    super(parent);
+
+    this._FinishedCallback = () => {
+      this._Finished();
+    }
+  }
+
+  get Name() {
+    return 'jump';
+  }
+
+  Enter(prevState) {
+    const curAction = this._parent._proxy._animations['jump'].action;
     const mixer = curAction.getMixer();
     mixer.addEventListener('finished', this._FinishedCallback);
 
@@ -540,7 +605,9 @@ class IdleState extends State {
       this._parent.SetState('walk');
     } else if (input._keys.backward) {
       this._parent.SetState('walkback');
-    } else if (input._keys.effe) {
+    } else if (input._keys.space) {
+      this._parent.SetState('jump');
+    }else if (input._keys.effe) {
       this._parent.SetState('dance');
     }
   }
@@ -556,7 +623,7 @@ class ThirdPersonCamera {
   }
 
   _CalculateIdealOffset() {
-    const idealOffset = new THREE.Vector3(-1.5, 2, -3);    
+    const idealOffset = new THREE.Vector3(-1, 2, -3);    
     idealOffset.applyQuaternion(this._params.target.Rotation);
     idealOffset.add(this._params.target.Position);
     return idealOffset;
