@@ -5,24 +5,20 @@ class ThirdPersonCamera {
   constructor(params) {
     this._params = params;
     this._camera = params.camera;
-    this._mouseCoords = params.mouseCoords;
-
-    console.log(this._mouseCoords);
-    // 
 
     this._currentPosition = new THREE.Vector3();
     this._currentLookat = new THREE.Vector3();
   }
 
   _CalculateIdealOffset() {
-    const idealOffset = new THREE.Vector3(0, 1.5, -2);
+    const idealOffset = new THREE.Vector3(-0.35, 2.5, -2);
     idealOffset.applyQuaternion(this._params.target.Rotation);
     idealOffset.add(this._params.target.Position);
     return idealOffset;
   }
 
   _CalculateIdealLookat() {
-    const idealLookat = new THREE.Vector3(0, 1.5, 5);
+    const idealLookat = new THREE.Vector3(0, 0, 5);
     idealLookat.applyQuaternion(this._params.target.Rotation);
     idealLookat.add(this._params.target.Position);
     return idealLookat;
@@ -32,8 +28,6 @@ class ThirdPersonCamera {
     const idealOffset = this._CalculateIdealOffset();
     const idealLookat = this._CalculateIdealLookat();
 
-    // const t = 0.05;
-    // const t = 4.0 * timeElapsed;
     const t = 1.0 - Math.pow(0.001, timeElapsed);
 
     this._currentPosition.lerp(idealOffset, t);
@@ -41,8 +35,6 @@ class ThirdPersonCamera {
 
     this._camera.position.copy(this._currentPosition);
     this._camera.lookAt(this._currentLookat);
-
-    //console.log(this._mouseCoords)
 
   }
 
@@ -69,11 +61,6 @@ class World {
     //Add the resize event listener
     window.addEventListener('resize', () => {
       this._OnWindowResize();
-    }, false);
-
-    // Add the mouse move event listener
-    this._canvas.addEventListener('mousemove', (e) => {
-      this._OnMouseMove(e);
     }, false);
 
     //Set the camera
@@ -131,26 +118,18 @@ class World {
 
     this._mixers = [];
     this._previousRAF = null;
-    this._mouseCoords = { x: window.innerWidth/2, y: window.innerHeight/2 };
     
-    //console.log(this._mouseCoords);
-
     const params = {
       camera: this._camera,
       scene: this._scene,
-      mouse: this._mouseCoords,
     }
 
     this._controls = new CharacterController(params);
 
     this._thirdPersonCamera = new ThirdPersonCamera({
       camera: this._camera,
-      target: this._controls,
-      mouse: this._mouseCoords,
-    });
-
-    console.log(this._mouseCoords);
-    
+      target: this._controls      
+    });    
 
     this._RAF();
   }
@@ -161,11 +140,7 @@ class World {
     this._threejs.setSize(window.innerWidth, window.innerHeight);
   }
 
-  _OnMouseMove(e) {
-    this._mouseCoords = { x: e.clientX, y: e.clientY };
-    console.log(this._mouseCoords);
-    return this._mouseCoords;
-  }
+
 
   _RAF() {
     requestAnimationFrame((t) => {
@@ -189,7 +164,9 @@ class World {
 
     if (this._controls) { this._controls.Update(timeElapsedS); }
 
-    this._thirdPersonCamera.Update(timeElapsedS);    
+    this._thirdPersonCamera.Update(timeElapsedS);   
+    
+  
 
   }
 };
@@ -199,5 +176,4 @@ let _APP = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   _APP = new World();
-  //console.log(_APP);
 });
