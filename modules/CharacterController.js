@@ -183,10 +183,6 @@ export class CharacterController {
 
     this._position.copy(controlObject.position);
 
-    if (this._input._keys.space) {
-      //console.log('jump'); //////////////////////////////////////////////////////////
-    }
-
     if (this._mixer) {
       this._mixer.update(timeInSeconds);
     }
