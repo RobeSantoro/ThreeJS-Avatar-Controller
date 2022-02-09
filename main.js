@@ -31,7 +31,7 @@ class World {
     this._scene = new THREE.Scene();
 
     ////////////////////////////////////////////////////////////////////////////////////// Set the Character Camera
-    const fov = 50;
+    const fov = 60;
     const aspect = window.innerWidth / window.innerHeight;
     const near = 0.1;
     const far = 100.0;
@@ -40,6 +40,7 @@ class World {
     // Add a Camera Helper to the Character Camera
     this.CameraHelper = new THREE.CameraHelper(this._CharacterCamera);
     this.CameraHelper.visible = false;
+
     this._scene.add(this.CameraHelper);
 
     ////////////////////////////////////////////////////////////////////////////////////////// Set the Debug Camera
@@ -75,9 +76,9 @@ class World {
     this._scene.add(this._dirLightGroup);
 
     // Add a shadow helper
-    const ShadowCameraHelper = new THREE.CameraHelper(dirLight.shadow.camera);
-    ShadowCameraHelper.visible = false;
-    this._scene.add(ShadowCameraHelper);
+    this.ShadowCameraHelper = new THREE.CameraHelper(dirLight.shadow.camera);
+    this.ShadowCameraHelper.visible = false;
+    this._scene.add(this.ShadowCameraHelper);
 
     // Add an ambient light    
     const ambLight = new THREE.AmbientLight(0xffffff, 0.1);
@@ -172,6 +173,7 @@ class World {
 
     if (this._controls._input._keys.debug === true) {
       this.CameraHelper.visible = true;
+      this.ShadowCameraHelper.visible = true;
     } else {      
       this.CameraHelper.visible = false;       
     }        
