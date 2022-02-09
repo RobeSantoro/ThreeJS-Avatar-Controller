@@ -1,53 +1,15 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CharacterController } from './modules/CharacterController';
-
-
-class ThirdPersonCamera {
-  constructor(params) {
-    this._params = params;
-    this._CharacterCamera = params.camera;
-
-    this._currentPosition = new THREE.Vector3();
-    this._currentLookat = new THREE.Vector3();
-  }
-
-  _CalculateIdealOffset() {
-    const idealOffset = new THREE.Vector3(-0.35, 2.5, -2);
-    idealOffset.applyQuaternion(this._params.target.Rotation);
-    idealOffset.add(this._params.target.Position);
-    return idealOffset;
-  }
-
-  _CalculateIdealLookat() {
-    const idealLookat = new THREE.Vector3(0, 0, 5);
-    idealLookat.applyQuaternion(this._params.target.Rotation);
-    idealLookat.add(this._params.target.Position);
-    return idealLookat;
-  }
-
-  Update(timeElapsed) {
-    const idealOffset = this._CalculateIdealOffset();
-    const idealLookat = this._CalculateIdealLookat();
-
-    const t = 1.0 - Math.pow(0.001, timeElapsed);
-
-    this._currentPosition.lerp(idealOffset, t);
-    this._currentLookat.lerp(idealLookat, t);
-
-    this._CharacterCamera.position.copy(this._currentPosition);
-    this._CharacterCamera.lookAt(this._currentLookat);
-
-  }
-
-};
-
+import { ThirdPersonCamera } from './modules/ThirdPersonCamera';
 class World {
   constructor() {
     this._Initialize();
   }
 
   _Initialize() {
+    /////////////////////////////////////////////////////////////////////////////////////// Set the WebGL Renderer
+
     this._threejs = new THREE.WebGLRenderer({
       antialias: true,
     });
@@ -68,7 +30,7 @@ class World {
     // Create the scene
     this._scene = new THREE.Scene();
 
-    //Set the Character Camera
+    ////////////////////////////////////////////////////////////////////////////////////// Set the Character Camera
     const fov = 50;
     const aspect = window.innerWidth / window.innerHeight;
     const near = 0.1;
@@ -79,7 +41,7 @@ class World {
     const cameraHelper = new THREE.CameraHelper(this._CharacterCamera);
     this._scene.add(cameraHelper);
 
-    // Set the Debug Camera
+    ///////////////////////////////////////////////////////////////////////////////////////// Set the Debug Camera
     this._DebugCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
     this._DebugCamera.position.set(0, 3, 5);
     this._DebugCamera.lookAt(new THREE.Vector3(0, 0, 0));
@@ -91,7 +53,6 @@ class World {
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
     dirLight.position.set(-2, 4, 3);    
     dirLight.castShadow = true;
-
 
     const shadowSize = 2;
 
@@ -115,13 +76,11 @@ class World {
     const helper = new THREE.CameraHelper(dirLight.shadow.camera);
     this._scene.add(helper);
 
-
-
     // Add an ambient light    
     const ambLight = new THREE.AmbientLight(0xffffff, 0.1);
     this._scene.add(ambLight);
 
-    // Add the Cubemap
+    ///////////////////////////////////////////////////////////////////////////////////////////////// Add the Cubemap
     const loader = new THREE.CubeTextureLoader();
     const envTexture = loader.load([
       './resources/textures/env/right.jpeg',  // posx
@@ -137,7 +96,13 @@ class World {
     // Add GroundPlane
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(100, 100, 10, 10),
-      new THREE.MeshStandardMaterial({ color: 0x485511, roughness: 0.1, metalness: 0.1, envMap: envTexture, envMapIntensity: 0.25 }));
+      new THREE.MeshStandardMaterial({
+        color: 0x485511,
+        roughness: 0.8,
+        metalness: 0.1,
+        envMap: envTexture,
+        envMapIntensity: 0.25 }));
+
     plane.castShadow = false;
     plane.receiveShadow = true;
     plane.rotation.x = -Math.PI / 2;
@@ -151,6 +116,7 @@ class World {
     const axes = new THREE.AxesHelper(1);
     this._scene.add(axes);
 
+    
     this._mixers = [];
     this._previousRAF = null;
     
