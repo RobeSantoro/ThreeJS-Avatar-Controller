@@ -68,7 +68,6 @@ class World {
     // Create the scene
     this._scene = new THREE.Scene();
 
-
     //Set the Character Camera
     const fov = 50;
     const aspect = window.innerWidth / window.innerHeight;
@@ -88,13 +87,13 @@ class World {
     // Set the Orbit Controls for the Debug Camera
     this._OrbitControls = new OrbitControls(this._DebugCamera, this._canvas);
 
-    // Add a directional light
-    let dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-
-    dirLight.position.set(2, 2, 2);
+    /////////////////////////////////////////////////////////////////////////////////////// Add a directional light
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(-2, 4, 3);    
     dirLight.castShadow = true;
 
-    const shadowSize = 1;
+
+    const shadowSize = 2;
 
     dirLight.shadow.mapsize = new THREE.Vector2(2048, 2048);
     dirLight.shadow.camera.near = 0.1;
@@ -104,7 +103,13 @@ class World {
     dirLight.shadow.camera.top = shadowSize;
     dirLight.shadow.camera.bottom = -shadowSize;
     dirLight.shadow.bias = 0.001;
-    this._scene.add(dirLight);
+
+    // Create a Group to hold the directional light
+    this._dirLightGroup = new THREE.Group();
+    this._dirLightGroup.add(dirLight);
+    this._dirLightGroup.add(dirLight.target);
+
+    this._scene.add(this._dirLightGroup);
 
     // Add a shadow helper
     const helper = new THREE.CameraHelper(dirLight.shadow.camera);
@@ -181,8 +186,12 @@ class World {
 
       this._RAF();
 
-      //this._threejs.render(this._scene, this._CharacterCamera);
-      this._threejs.render(this._scene, this._DebugCamera);
+      if (this._controls._input._keys.debug === true) {
+        this._threejs.render(this._scene, this._DebugCamera);       
+      } else {
+        this._threejs.render(this._scene, this._CharacterCamera);        
+      }
+
       this._Step(t - this._previousRAF);
       this._previousRAF = t;
     });
@@ -198,7 +207,10 @@ class World {
 
     this._thirdPersonCamera.Update(timeElapsedS);   
     
-  
+    this._dirLightGroup.position.set(this._controls._position.x, this._controls._position.y, this._controls._position.z);
+
+    
+    
 
   }
 };
