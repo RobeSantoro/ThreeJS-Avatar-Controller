@@ -1,10 +1,12 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CharacterController } from './modules/CharacterController';
+
 
 class ThirdPersonCamera {
   constructor(params) {
     this._params = params;
-    this._camera = params.camera;
+    this._CharacterCamera = params.camera;
 
     this._currentPosition = new THREE.Vector3();
     this._currentLookat = new THREE.Vector3();
@@ -33,8 +35,8 @@ class ThirdPersonCamera {
     this._currentPosition.lerp(idealOffset, t);
     this._currentLookat.lerp(idealLookat, t);
 
-    this._camera.position.copy(this._currentPosition);
-    this._camera.lookAt(this._currentLookat);
+    this._CharacterCamera.position.copy(this._currentPosition);
+    this._CharacterCamera.lookAt(this._currentLookat);
 
   }
 
@@ -63,24 +65,52 @@ class World {
       this._OnWindowResize();
     }, false);
 
-    //Set the camera
+    // Create the scene
+    this._scene = new THREE.Scene();
+
+
+    //Set the Character Camera
     const fov = 50;
     const aspect = window.innerWidth / window.innerHeight;
     const near = 0.1;
     const far = 100.0;
-    this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    //this._camera.position.set(0, 1, 3);
+    this._CharacterCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 
-    // Create the scene
-    this._scene = new THREE.Scene();
+    // Add a Camera Helper to the Character Camera
+    const cameraHelper = new THREE.CameraHelper(this._CharacterCamera);
+    this._scene.add(cameraHelper);
+
+    // Set the Debug Camera
+    this._DebugCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    this._DebugCamera.position.set(0, 3, 5);
+    this._DebugCamera.lookAt(new THREE.Vector3(0, 0, 0));
+
+    // Set the Orbit Controls for the Debug Camera
+    this._OrbitControls = new OrbitControls(this._DebugCamera, this._canvas);
 
     // Add a directional light
     let dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
 
     dirLight.position.set(2, 2, 2);
     dirLight.castShadow = true;
+
+    const shadowSize = 1;
+
     dirLight.shadow.mapsize = new THREE.Vector2(2048, 2048);
+    dirLight.shadow.camera.near = 0.1;
+    dirLight.shadow.camera.far = 100;
+    dirLight.shadow.camera.left = -shadowSize;
+    dirLight.shadow.camera.right = shadowSize;
+    dirLight.shadow.camera.top = shadowSize;
+    dirLight.shadow.camera.bottom = -shadowSize;
+    dirLight.shadow.bias = 0.001;
     this._scene.add(dirLight);
+
+    // Add a shadow helper
+    const helper = new THREE.CameraHelper(dirLight.shadow.camera);
+    this._scene.add(helper);
+
+
 
     // Add an ambient light    
     const ambLight = new THREE.AmbientLight(0xffffff, 0.1);
@@ -120,14 +150,14 @@ class World {
     this._previousRAF = null;
     
     const params = {
-      camera: this._camera,
+      camera: this._CharacterCamera,
       scene: this._scene,
     }
 
     this._controls = new CharacterController(params);
 
     this._thirdPersonCamera = new ThirdPersonCamera({
-      camera: this._camera,
+      camera: this._CharacterCamera,
       target: this._controls      
     });    
 
@@ -135,12 +165,13 @@ class World {
   }
 
   _OnWindowResize() {
-    this._camera.aspect = window.innerWidth / window.innerHeight;
-    this._camera.updateProjectionMatrix();
+    this._CharacterCamera.aspect = window.innerWidth / window.innerHeight;
+    this._CharacterCamera.updateProjectionMatrix();
+    this._DebugCamera.aspect = window.innerWidth / window.innerHeight;
+    this._DebugCamera.updateProjectionMatrix();
+
     this._threejs.setSize(window.innerWidth, window.innerHeight);
   }
-
-
 
   _RAF() {
     requestAnimationFrame((t) => {
@@ -150,7 +181,8 @@ class World {
 
       this._RAF();
 
-      this._threejs.render(this._scene, this._camera);
+      //this._threejs.render(this._scene, this._CharacterCamera);
+      this._threejs.render(this._scene, this._DebugCamera);
       this._Step(t - this._previousRAF);
       this._previousRAF = t;
     });
@@ -176,4 +208,5 @@ let _APP = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   _APP = new World();
+  console.log(_APP);
 });
