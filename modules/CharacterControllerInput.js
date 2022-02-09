@@ -12,7 +12,7 @@ export class CharacterControllerInput {
       effe: false,
       shift: false,
       space: false,
-      escape: false,
+      debug: false,
     };
     document.addEventListener('keydown', (e) => this._onKeyDown(e), false);
     document.addEventListener('keyup', (e) => this._onKeyUp(e), false);
@@ -41,8 +41,12 @@ export class CharacterControllerInput {
       case 32: // SPACE
         this._keys.space = true;
         break;
-      case 86: // V
-        this._keys.escape = true;
+      case 86: // v
+        if (this._keys.debug == true) {
+          this._keys.debug = false;
+        } else {          
+          this._keys.debug = true;
+        }
         break;      
     }
   }
@@ -69,10 +73,7 @@ export class CharacterControllerInput {
         break;
       case 32: // SPACE
         this._keys.space = false;
-        break;
-      case 86: // V
-        this._keys.escape = false;
-        break;      
+        break;  
     }
   }
 }
