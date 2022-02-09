@@ -38,10 +38,11 @@ class World {
     this._CharacterCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 
     // Add a Camera Helper to the Character Camera
-    const cameraHelper = new THREE.CameraHelper(this._CharacterCamera);
-    this._scene.add(cameraHelper);
+    this.CameraHelper = new THREE.CameraHelper(this._CharacterCamera);
+    this.CameraHelper.visible = false;
+    this._scene.add(this.CameraHelper);
 
-    ///////////////////////////////////////////////////////////////////////////////////////// Set the Debug Camera
+    ////////////////////////////////////////////////////////////////////////////////////////// Set the Debug Camera
     this._DebugCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
     this._DebugCamera.position.set(0, 3, 5);
     this._DebugCamera.lookAt(new THREE.Vector3(0, 0, 0));
@@ -49,7 +50,8 @@ class World {
     // Set the Orbit Controls for the Debug Camera
     this._OrbitControls = new OrbitControls(this._DebugCamera, this._canvas);
 
-    /////////////////////////////////////////////////////////////////////////////////////// Add a directional light
+    /////////////////////////////////////////////// Add a directional light, Shadow Camera Helper and Ambient Light
+
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
     dirLight.position.set(-2, 4, 3);    
     dirLight.castShadow = true;
@@ -73,14 +75,16 @@ class World {
     this._scene.add(this._dirLightGroup);
 
     // Add a shadow helper
-    const helper = new THREE.CameraHelper(dirLight.shadow.camera);
-    this._scene.add(helper);
+    const ShadowCameraHelper = new THREE.CameraHelper(dirLight.shadow.camera);
+    ShadowCameraHelper.visible = false;
+    this._scene.add(ShadowCameraHelper);
 
     // Add an ambient light    
     const ambLight = new THREE.AmbientLight(0xffffff, 0.1);
     this._scene.add(ambLight);
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////// Add the Cubemap
+    /////////////////////////////////////////////////////////////////////////////////////////////// Add the Cubemap
+
     const loader = new THREE.CubeTextureLoader();
     const envTexture = loader.load([
       './resources/textures/env/right.jpeg',  // posx
@@ -93,7 +97,7 @@ class World {
     envTexture.encoding = THREE.sRGBEncoding;
     this._scene.background = envTexture;
 
-    // Add GroundPlane
+    /////////////////////////////////////////////////////////////////////////////////////////////// Add GroundPlane
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(100, 100, 10, 10),
       new THREE.MeshStandardMaterial({
@@ -112,25 +116,13 @@ class World {
     const grid = new THREE.GridHelper(50, 100, 0xffffff, 0xffffff);    
     this._scene.add(grid);
 
-    // Add axes
-    const axes = new THREE.AxesHelper(1);
-    this._scene.add(axes);
-
-    
+    //////////////////////////////////////////////////////////// Add the Character Controller and ThirdPersonCamera
     this._mixers = [];
-    this._previousRAF = null;
-    
-    const params = {
-      camera: this._CharacterCamera,
-      scene: this._scene,
-    }
+    this._previousRAF = null;  
 
-    this._controls = new CharacterController(params);
+    this._controls = new CharacterController({ scene: this._scene });
+    this._thirdPersonCamera = new ThirdPersonCamera({ camera: this._CharacterCamera, target: this._controls });
 
-    this._thirdPersonCamera = new ThirdPersonCamera({
-      camera: this._CharacterCamera,
-      target: this._controls      
-    });    
 
     this._RAF();
   }
@@ -153,8 +145,11 @@ class World {
       this._RAF();
 
       if (this._controls._input._keys.debug === true) {
-        this._threejs.render(this._scene, this._DebugCamera);       
+
+        this._threejs.render(this._scene, this._DebugCamera);
+
       } else {
+
         this._threejs.render(this._scene, this._CharacterCamera);        
       }
 
@@ -175,8 +170,11 @@ class World {
     
     this._dirLightGroup.position.set(this._controls._position.x, this._controls._position.y, this._controls._position.z);
 
-    
-    
+    if (this._controls._input._keys.debug === true) {
+      this.CameraHelper.visible = true;
+    } else {      
+      this.CameraHelper.visible = false;       
+    }        
 
   }
 };
