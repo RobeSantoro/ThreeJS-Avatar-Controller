@@ -1,51 +1,15 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CharacterController } from './modules/CharacterController';
-
-class ThirdPersonCamera {
-  constructor(params) {
-    this._params = params;
-    this._camera = params.camera;
-
-    this._currentPosition = new THREE.Vector3();
-    this._currentLookat = new THREE.Vector3();
-  }
-
-  _CalculateIdealOffset() {
-    const idealOffset = new THREE.Vector3(-0.35, 2.5, -2);
-    idealOffset.applyQuaternion(this._params.target.Rotation);
-    idealOffset.add(this._params.target.Position);
-    return idealOffset;
-  }
-
-  _CalculateIdealLookat() {
-    const idealLookat = new THREE.Vector3(0, 0, 5);
-    idealLookat.applyQuaternion(this._params.target.Rotation);
-    idealLookat.add(this._params.target.Position);
-    return idealLookat;
-  }
-
-  Update(timeElapsed) {
-    const idealOffset = this._CalculateIdealOffset();
-    const idealLookat = this._CalculateIdealLookat();
-
-    const t = 1.0 - Math.pow(0.001, timeElapsed);
-
-    this._currentPosition.lerp(idealOffset, t);
-    this._currentLookat.lerp(idealLookat, t);
-
-    this._camera.position.copy(this._currentPosition);
-    this._camera.lookAt(this._currentLookat);
-
-  }
-
-};
-
+import { ThirdPersonCamera } from './modules/ThirdPersonCamera';
 class World {
   constructor() {
     this._Initialize();
   }
 
   _Initialize() {
+    /////////////////////////////////////////////////////////////////////////////////////// Set the WebGL Renderer
+
     this._threejs = new THREE.WebGLRenderer({
       antialias: true,
     });
@@ -63,30 +27,65 @@ class World {
       this._OnWindowResize();
     }, false);
 
-    //Set the camera
-    const fov = 50;
-    const aspect = window.innerWidth / window.innerHeight;
-    const near = 0.1;
-    const far = 100.0;
-    this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    //this._camera.position.set(0, 1, 3);
-
     // Create the scene
     this._scene = new THREE.Scene();
 
-    // Add a directional light
-    let dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    ////////////////////////////////////////////////////////////////////////////////////// Set the Character Camera
+    const fov = 60;
+    const aspect = window.innerWidth / window.innerHeight;
+    const near = 0.1;
+    const far = 100.0;
+    this._CharacterCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
 
-    dirLight.position.set(2, 2, 2);
+    // Add a Camera Helper to the Character Camera
+    this.CameraHelper = new THREE.CameraHelper(this._CharacterCamera);
+    this.CameraHelper.visible = false;
+
+    this._scene.add(this.CameraHelper);
+
+    ////////////////////////////////////////////////////////////////////////////////////////// Set the Debug Camera
+    this._DebugCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    this._DebugCamera.position.set(0, 3, 5);
+    this._DebugCamera.lookAt(new THREE.Vector3(0, 0, 0));
+
+    // Set the Orbit Controls for the Debug Camera
+    this._OrbitControls = new OrbitControls(this._DebugCamera, this._canvas);
+
+    /////////////////////////////////////////////// Add a directional light, Shadow Camera Helper and Ambient Light
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(-2, 4, 3);    
     dirLight.castShadow = true;
+
+    const shadowSize = 2;
+
     dirLight.shadow.mapsize = new THREE.Vector2(2048, 2048);
-    this._scene.add(dirLight);
+    dirLight.shadow.camera.near = 0.1;
+    dirLight.shadow.camera.far = 100;
+    dirLight.shadow.camera.left = -shadowSize;
+    dirLight.shadow.camera.right = shadowSize;
+    dirLight.shadow.camera.top = shadowSize;
+    dirLight.shadow.camera.bottom = -shadowSize;
+    dirLight.shadow.bias = 0.001;
+
+    // Create a Group to hold the directional light
+    this._dirLightGroup = new THREE.Group();
+    this._dirLightGroup.add(dirLight);
+    this._dirLightGroup.add(dirLight.target);
+
+    this._scene.add(this._dirLightGroup);
+
+    // Add a shadow helper
+    this.ShadowCameraHelper = new THREE.CameraHelper(dirLight.shadow.camera);
+    this.ShadowCameraHelper.visible = false;
+    this._scene.add(this.ShadowCameraHelper);
 
     // Add an ambient light    
     const ambLight = new THREE.AmbientLight(0xffffff, 0.1);
     this._scene.add(ambLight);
 
-    // Add the Cubemap
+    /////////////////////////////////////////////////////////////////////////////////////////////// Add the Cubemap
+
     const loader = new THREE.CubeTextureLoader();
     const envTexture = loader.load([
       './resources/textures/env/right.jpeg',  // posx
@@ -99,10 +98,16 @@ class World {
     envTexture.encoding = THREE.sRGBEncoding;
     this._scene.background = envTexture;
 
-    // Add GroundPlane
+    /////////////////////////////////////////////////////////////////////////////////////////////// Add GroundPlane
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(100, 100, 10, 10),
-      new THREE.MeshStandardMaterial({ color: 0x485511, roughness: 0.1, metalness: 0.1, envMap: envTexture, envMapIntensity: 0.25 }));
+      new THREE.MeshStandardMaterial({
+        color: 0x485511,
+        roughness: 0.8,
+        metalness: 0.1,
+        envMap: envTexture,
+        envMapIntensity: 0.25 }));
+
     plane.castShadow = false;
     plane.receiveShadow = true;
     plane.rotation.x = -Math.PI / 2;
@@ -112,35 +117,25 @@ class World {
     const grid = new THREE.GridHelper(50, 100, 0xffffff, 0xffffff);    
     this._scene.add(grid);
 
-    // Add axes
-    const axes = new THREE.AxesHelper(1);
-    this._scene.add(axes);
-
+    //////////////////////////////////////////////////////////// Add the Character Controller and ThirdPersonCamera
     this._mixers = [];
-    this._previousRAF = null;
-    
-    const params = {
-      camera: this._camera,
-      scene: this._scene,
-    }
+    this._previousRAF = null;  
 
-    this._controls = new CharacterController(params);
+    this._controls = new CharacterController({ scene: this._scene });
+    this._thirdPersonCamera = new ThirdPersonCamera({ camera: this._CharacterCamera, target: this._controls });
 
-    this._thirdPersonCamera = new ThirdPersonCamera({
-      camera: this._camera,
-      target: this._controls      
-    });    
 
     this._RAF();
   }
 
   _OnWindowResize() {
-    this._camera.aspect = window.innerWidth / window.innerHeight;
-    this._camera.updateProjectionMatrix();
+    this._CharacterCamera.aspect = window.innerWidth / window.innerHeight;
+    this._CharacterCamera.updateProjectionMatrix();
+    this._DebugCamera.aspect = window.innerWidth / window.innerHeight;
+    this._DebugCamera.updateProjectionMatrix();
+
     this._threejs.setSize(window.innerWidth, window.innerHeight);
   }
-
-
 
   _RAF() {
     requestAnimationFrame((t) => {
@@ -150,7 +145,15 @@ class World {
 
       this._RAF();
 
-      this._threejs.render(this._scene, this._camera);
+      if (this._controls._input._keys.debug === true) {
+
+        this._threejs.render(this._scene, this._DebugCamera);
+
+      } else {
+
+        this._threejs.render(this._scene, this._CharacterCamera);        
+      }
+
       this._Step(t - this._previousRAF);
       this._previousRAF = t;
     });
@@ -166,7 +169,14 @@ class World {
 
     this._thirdPersonCamera.Update(timeElapsedS);   
     
-  
+    this._dirLightGroup.position.set(this._controls._position.x, this._controls._position.y, this._controls._position.z);
+
+    if (this._controls._input._keys.debug === true) {
+      this.CameraHelper.visible = true;
+      this.ShadowCameraHelper.visible = true;
+    } else {      
+      this.CameraHelper.visible = false;       
+    }        
 
   }
 };
@@ -176,4 +186,5 @@ let _APP = null;
 
 window.addEventListener('DOMContentLoaded', () => {
   _APP = new World();
+  console.log(_APP);
 });
