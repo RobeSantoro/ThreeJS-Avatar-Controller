@@ -6,8 +6,8 @@ import { CharacterControllerProxy } from './CharacterControllerProxy';
 import { CharacterControllerInput } from './CharacterControllerInput';
 
 /* RTFKT      const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/b45f2152-d224-4ffb-9ecc-662993cb9866.glb';*/
-/* LONG HAIR  const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/cdca2fdd-f8e0-4501-b4e3-b435d0a7a63c.glb';*/
-/* LOCAL */   const AVATAR_PATH = './resources/models/Avatar.glb';
+/* LONG HAIR  const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/cdca2fdd-f8e0-4501-b4e3-b435d0a7a63c.glb';
+/* LOCAL  */  const AVATAR_PATH = './resources/models/Avatar.glb';
 
 /* ANIMATIONS */
 const ANIMATIONS_PATH = '/resources/animations/Animations.glb';
@@ -19,8 +19,8 @@ export class CharacterController {
 
   _Init(params) {
     this._params = params;
-    this._decceleration = new THREE.Vector3(-0.0005, -0.0001, -5.0);
-    this._acceleration = new THREE.Vector3(1.0, 0.25, 10.0);
+    this._decceleration = new THREE.Vector3(-0.0005, -0.0001, -9.0);
+    this._acceleration = new THREE.Vector3(1.0, 0.25, 20.0);
     this._velocity = new THREE.Vector3(0, 0, 0);
     this._position = new THREE.Vector3();
 
