@@ -25,7 +25,15 @@ export class CharacterController {
     this._position = new THREE.Vector3();
 
     this._animations = {};
-    this._input = new CharacterControllerInput();
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+    if (true) { // Check if onMobile/TouchDevice or not
+      this._input = new CharacterControllerInput();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+
     this._stateMachine = new CharacterFSM(new CharacterControllerProxy(this._animations));
 
     this._LoadModelandAnims();
@@ -111,9 +119,12 @@ export class CharacterController {
   }
 
   Update(timeInSeconds) {
+
     if (!this._target) {
       return;
     }
+
+    // console.log(this._input._mouse);
 
     this._stateMachine.Update(timeInSeconds, this._input);
 
