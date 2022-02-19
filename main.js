@@ -44,12 +44,12 @@ class World {
     this._scene.add(this.CameraHelper);
 
     ////////////////////////////////////////////////////////////////////////////////////////// Set the Debug Camera
-    this._DebugCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this._DebugCamera.position.set(0, 3, 5);
-    this._DebugCamera.lookAt(new THREE.Vector3(0, 0, 0));
+    this.DebugCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    this.DebugCamera.position.set(0, 3, 5);
+    this.DebugCamera.lookAt(new THREE.Vector3(0, 0, 0));
 
     // Set the Orbit Controls for the Debug Camera
-    this._OrbitControls = new OrbitControls(this._DebugCamera, this._canvas);
+    this.OrbitControls = new OrbitControls(this.DebugCamera, this._canvas);
 
     /////////////////////////////////////////////// Add a directional light, Shadow Camera Helper and Ambient Light
 
@@ -121,8 +121,8 @@ class World {
     this._mixers = [];
     this._previousRAF = null;  
 
-    this._controls = new CharacterController({ scene: this._scene });
-    this._thirdPersonCamera = new ThirdPersonCamera({ camera: this._CharacterCamera, target: this._controls });
+    this._CharacterController = new CharacterController({ scene: this._scene });
+    this._thirdPersonCamera = new ThirdPersonCamera({ camera: this._CharacterCamera, target: this._CharacterController });
 
 
     this._RAF();
@@ -131,8 +131,8 @@ class World {
   _OnWindowResize() {
     this._CharacterCamera.aspect = window.innerWidth / window.innerHeight;
     this._CharacterCamera.updateProjectionMatrix();
-    this._DebugCamera.aspect = window.innerWidth / window.innerHeight;
-    this._DebugCamera.updateProjectionMatrix();
+    this.DebugCamera.aspect = window.innerWidth / window.innerHeight;
+    this.DebugCamera.updateProjectionMatrix();
 
     this._threejs.setSize(window.innerWidth, window.innerHeight);
   }
@@ -145,9 +145,9 @@ class World {
 
       this._RAF();
 
-      if (this._controls._input._keys.debug === true) {
+      if (this._CharacterController._input._keys.debug === true) {
 
-        this._threejs.render(this._scene, this._DebugCamera);
+        this._threejs.render(this._scene, this.DebugCamera);
 
       } else {
 
@@ -165,13 +165,13 @@ class World {
 
     if (this._mixers) { this._mixers.map(m => m.update(timeElapsedS)); }
 
-    if (this._controls) { this._controls.Update(timeElapsedS); }
+    if (this._CharacterController) { this._CharacterController.Update(timeElapsedS); }
 
     this._thirdPersonCamera.Update(timeElapsedS);   
     
-    this._dirLightGroup.position.set(this._controls._position.x, this._controls._position.y, this._controls._position.z);
+    this._dirLightGroup.position.set(this._CharacterController._position.x, this._CharacterController._position.y, this._CharacterController._position.z);
 
-    if (this._controls._input._keys.debug === true) {
+    if (this._CharacterController._input._keys.debug === true) {
       this.CameraHelper.visible = true;
       this.ShadowCameraHelper.visible = true;
     } else {      
