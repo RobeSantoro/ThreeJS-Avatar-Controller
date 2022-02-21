@@ -16,5 +16,7 @@ export class CharacterFSM extends FiniteStateMachine {
     this._AddState('walkback', STATE.WalkBackState);
     this._AddState('jump', STATE.JumpState);
     this._AddState('jumprun', STATE.JumpRunState);
-  }
+    //this._AddState('strafeLeft', STATE.StrafeLeftState);
+    //this._AddState('strafeRight', STATE.StrafeRightState);
+    }
 }

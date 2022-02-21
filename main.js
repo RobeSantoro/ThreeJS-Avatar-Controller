@@ -119,9 +119,9 @@ class World {
 
     //////////////////////////////////////////////////////////// Add the Character Controller and ThirdPersonCamera
     this._mixers = [];
-    this._previousRAF = null;  
+    this._previousRAF = null;    
 
-    this._CharacterController = new CharacterController({ scene: this._scene });
+    this._CharacterController = new CharacterController({ scene: this._scene, canvas: this._canvas });
     this._thirdPersonCamera = new ThirdPersonCamera({ camera: this._CharacterCamera, target: this._CharacterController });
 
 
@@ -129,8 +129,10 @@ class World {
   }
 
   _OnWindowResize() {
+
     this._CharacterCamera.aspect = window.innerWidth / window.innerHeight;
     this._CharacterCamera.updateProjectionMatrix();
+
     this.DebugCamera.aspect = window.innerWidth / window.innerHeight;
     this.DebugCamera.updateProjectionMatrix();
 
@@ -139,17 +141,18 @@ class World {
 
   _RAF() {
     requestAnimationFrame((t) => {
+      //console.log(Math.floor(t / 1000));
       if (this._previousRAF === null) {
         this._previousRAF = t;
       }
 
       this._RAF();
 
-      if (this._CharacterController._input._keys.debug === true) {
+      if (this._CharacterController._input._keys.debug === true) { // Render Debug Camera
 
         this._threejs.render(this._scene, this.DebugCamera);
 
-      } else {
+      } else { // Render Character Camera
 
         this._threejs.render(this._scene, this._CharacterCamera);        
       }
@@ -167,15 +170,23 @@ class World {
 
     if (this._CharacterController) { this._CharacterController.Update(timeElapsedS); }
 
-    this._thirdPersonCamera.Update(timeElapsedS);   
+    if (this._thirdPersonCamera) { this._thirdPersonCamera.Update(timeElapsedS); } 
     
-    this._dirLightGroup.position.set(this._CharacterController._position.x, this._CharacterController._position.y, this._CharacterController._position.z);
+    this._dirLightGroup.position
+    .set( this._CharacterController._position.x,
+          this._CharacterController._position.y,
+          this._CharacterController._position.z);
 
-    if (this._CharacterController._input._keys.debug === true) {
+    
+    if (this._CharacterController._input._keys.debug === true) { // Activate Debug Helpers
+
       this.CameraHelper.visible = true;
       this.ShadowCameraHelper.visible = true;
+
     } else {      
-      this.CameraHelper.visible = false;       
+
+      this.CameraHelper.visible = false;   
+      this.ShadowCameraHelper.visible = false;
     }        
 
   }
