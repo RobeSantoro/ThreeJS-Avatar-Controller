@@ -57,7 +57,7 @@ class World {
     dirLight.position.set(-2, 4, 3);    
     dirLight.castShadow = true;
 
-    const shadowSize = 2;
+    const shadowSize = 1.5;
 
     dirLight.shadow.mapsize = new THREE.Vector2(2048, 2048);
     dirLight.shadow.camera.near = 0.1;
@@ -119,12 +119,25 @@ class World {
 
     //////////////////////////////////////////////////////////// Add the Character Controller and ThirdPersonCamera
     this._mixers = [];
-    this._previousRAF = null;    
+    this._previousRAF = null;
+    
+    // Create Params
+    this._params = {
+      camera: this._CharacterCamera,
+      scene: this._scene,
+      canvas: this._canvas      
+    }   
 
-    this._CharacterController = new CharacterController({ scene: this._scene, canvas: this._canvas });
-    this._thirdPersonCamera = new ThirdPersonCamera({ camera: this._CharacterCamera, target: this._CharacterController });
+    // Create the Character Controller
+    this._CharacterController = new CharacterController(this._params);
 
+    // Add target to Params Object for the ThirdPersonCamera to follow
+    this._params.target = this._CharacterController
 
+    // Create the ThirdPersonCamera
+    this._thirdPersonCamera = new ThirdPersonCamera(this._params);
+
+    /////////////////////////////////////////////////////////////////////////////////////// Request Animation Frame
     this._RAF();
   }
 
