@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
 import { CharacterController } from './modules/CharacterController';
 import { ThirdPersonCamera } from './modules/ThirdPersonCamera';
 class World {
@@ -118,7 +119,7 @@ class World {
     this._scene.add(grid);
 
     //////////////////////////////////////////////////////////// Add the Character Controller and ThirdPersonCamera
-    this._mixers = [];
+    //this._mixers = [];
     this._previousRAF = null;
     
     // Create Params
@@ -179,7 +180,7 @@ class World {
 
     const timeElapsedS = timeElapsed * 0.001;
 
-    if (this._mixers) { this._mixers.map(m => m.update(timeElapsedS)); }
+    //if (this._mixers) { this._mixers.map(m => m.update(timeElapsedS)); }
 
     if (this._CharacterController) { this._CharacterController.Update(timeElapsedS); }
 
