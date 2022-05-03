@@ -37,6 +37,5 @@ export class ThirdPersonCamera {
 
     this._CharacterCamera.position.copy(this._currentPosition);
     this._CharacterCamera.lookAt(this._currentLookat);
-
   }
 }
