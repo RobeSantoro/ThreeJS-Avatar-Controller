@@ -30,27 +30,6 @@ export class World {
     // Create the scene
     this._scene = new THREE.Scene();
 
-    ////////////////////////////////////////////////////////////////////////////////////// Set the Character Camera
-    const fov = 60;
-    const aspect = window.innerWidth / window.innerHeight;
-    const near = 0.1;
-    const far = 100.0;
-    this._CharacterCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-
-    // Add a Camera Helper to the Character Camera
-    this.CameraHelper = new THREE.CameraHelper(this._CharacterCamera);
-    this.CameraHelper.visible = false;
-
-    this._scene.add(this.CameraHelper);
-
-    ////////////////////////////////////////////////////////////////////////////////////////// Set the Debug Camera
-    this.DebugCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this.DebugCamera.position.set(0, 3, 5);
-    this.DebugCamera.lookAt(new THREE.Vector3(0, 0, 0));
-
-    // Set the Orbit Controls for the Debug Camera
-    this.OrbitControls = new OrbitControls(this.DebugCamera, this._canvas);
-
     /////////////////////////////////////////////// Add a directional light, Shadow Camera Helper and Ambient Light
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
     dirLight.position.set(-2, 4, 3);
@@ -115,6 +94,27 @@ export class World {
     // Add grid
     const grid = new THREE.GridHelper(50, 100, 0xffffff, 0xffffff);
     this._scene.add(grid);
+    
+    ////////////////////////////////////////////////////////////////////////////////////////// Set the Debug Camera
+    const fov = 60;
+    const aspect = window.innerWidth / window.innerHeight;
+    const near = 0.1;
+    const far = 100.0;
+    this.DebugCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+    this.DebugCamera.position.set(0, 3, 5);
+    this.DebugCamera.lookAt(new THREE.Vector3(0, 0, 0));
+
+    // Set the Orbit Controls for the Debug Camera
+    this.OrbitControls = new OrbitControls(this.DebugCamera, this._canvas);
+
+    ////////////////////////////////////////////////////////////////////////////////////// Set the Character Camera
+    this._CharacterCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+
+    // Add a Camera Helper to the Character Camera
+    this.CameraHelper = new THREE.CameraHelper(this._CharacterCamera);
+    this.CameraHelper.visible = false;
+
+    this._scene.add(this.CameraHelper);
 
     //////////////////////////////////////////////////////////// Add the Character Controller and ThirdPersonCamera
     //this._mixers = [];
