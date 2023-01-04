@@ -5,9 +5,9 @@ import { CharacterFSM } from './CharacterFSM';
 import { CharacterControllerProxy } from './CharacterControllerProxy';
 import { CharacterControllerInput } from './CharacterControllerInput';
 
-/* RTFKT      const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/b45f2152-d224-4ffb-9ecc-662993cb9866.glb';*/
-/* LONG HAIR */ const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/cdca2fdd-f8e0-4501-b4e3-b435d0a7a63c.glb';
-/* LOCAL    const AVATAR_PATH = './resources/models/Avatar.glb';*/
+// const AVATAR_PATH = 'https://d1a370nemizbjq.cloudfront.net/b45f2152-d224-4ffb-9ecc-662993cb9866.glb'; // RTFKT
+const AVATAR_PATH = 'https://api.readyplayer.me/v1/avatars/63b439b7f17e295642bdd67a.glb?quality=high&meshLod=0&textureSizeLimit=1024&textureAtlas=1024&morphTargets=none'; // Bianca
+// const AVATAR_PATH = './resources/models/Avatar.glb'; // LOCAL
 
 /* ANIMATIONS */
 const ANIMATIONS_PATH = '/resources/animations/Animations.glb';
